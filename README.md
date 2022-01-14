@@ -5,6 +5,13 @@ representing travel time instead of distance in space?
 <br/>
 This project aims to answer this exact question (on a smaller scale).
 
+### Demo
+Here you can see a demo I created: https://martinvolk91.github.io/time-space-maps/
+<br/>
+Try clicking on different stations to see the map change.
+The blue circles show 10, 20, 30 and 40 minute travel borders.
+<br/>
+
 ### Idea
 The initial plan was to create a time space map of the Vienna U-Bahn 
 metro railway network.
@@ -26,10 +33,11 @@ to be "north" on the time-space map as well). Using the angle and travel time
 we can then calculate the new longitude and latitude.
 <br/>
 
-### Demo
-You can find demo here :https://martinvolk91.github.io/time-space-maps/
-Try clicking on different stations to see the map change.
-The blue circles show 10, 20, 30 and 40 minute travel borders.
+### Future
+The current version of the map only deals with stations.<br/>
+The next question is how would the railroads look if the same was applied
+to them and not only the stations. How would the map of the whole city look like
+if we expand it to roads as well?
 
 ### Resources
 https://www.data.gv.at/katalog/dataset/wiener-linien-echtzeitdaten-via-datendrehscheibe-wien
