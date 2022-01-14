@@ -26,5 +26,10 @@ to be "north" on the time-space map as well). Using the angle and travel time
 we can then calculate the new longitude and latitude.
 <br/>
 
+### Demo
+You can find demo here :https://martinvolk91.github.io/time-space-maps/
+Try clicking on different stations to see the map change.
+The blue circles show 10, 20, 30 and 40 minute travel borders.
+
 ### Resources
 https://www.data.gv.at/katalog/dataset/wiener-linien-echtzeitdaten-via-datendrehscheibe-wien
