@@ -1,0 +1,274 @@
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<head>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js" charSet="utf-8"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" charSet="utf-8"></script>
+    <script src="http://d3js.org/d3.v3.min.js" charSet="utf-8"></script>
+</head>
+<body>
+<div id="myPlot" style="width: 1000px; height: 1000px;"><!-- Plotly chart will be drawn inside this DIV --></div>
+<script>
+    // helper functions
+    function getColumnsMap(dataset) {
+        let columns = d3.entries(dataset[0])
+        let columnsMap = {}
+        for (let i = 0; i < columns.length; i++) {
+            columnsMap[columns[i]["key"]] = i
+        }
+        return columnsMap
+    }
+
+    function sortByColumn(a, colIndex) {
+
+        a.sort(sortFunction);
+
+        function sortFunction(a, b) {
+            if (a[colIndex] === b[colIndex]) {
+                return 0;
+            } else {
+                return (a[colIndex] < b[colIndex]) ? -1 : 1;
+            }
+        }
+
+        return a;
+    }
+
+    function prepareMapData(source_name, dataset) {
+        let columnsMap = getColumnsMap(dataset)
+
+        let mapData = {}
+
+        let df_u1 = [];
+        let df_u2 = [];
+        let df_u3 = [];
+        let df_u4 = [];
+        let df_u6 = [];
+
+        for (let i = 0; i < dataset.length; i++) {
+            let row = dataset[i];
+            if (row['source_name'] === source_name && row['LineText'].includes('U1')) {
+                df_u1.push(Object.values(row));
+            }
+            if (row['source_name'] === source_name && row['LineText'].includes('U2')) {
+                df_u2.push(Object.values(row));
+            }
+            if (row['source_name'] === source_name && row['LineText'].includes('U3')) {
+                df_u3.push(Object.values(row));
+            }
+            if (row['source_name'] === source_name && row['LineText'].includes('U4')) {
+                df_u4.push(Object.values(row));
+            }
+            if (row['source_name'] === source_name && row['LineText'].includes('U6')) {
+                df_u6.push(Object.values(row));
+            }
+        }
+
+        mapData['U1'] = sortByColumn(df_u1, columnsMap["stop_seq_count_U1"]);
+        mapData['U2'] = sortByColumn(df_u2, columnsMap["stop_seq_count_U2"]);
+        mapData['U3'] = sortByColumn(df_u3, columnsMap["stop_seq_count_U3"]);
+        mapData['U4'] = sortByColumn(df_u4, columnsMap["stop_seq_count_U4"]);
+        mapData['U6'] = sortByColumn(df_u6, columnsMap["stop_seq_count_U6"]);
+
+        return mapData
+    }
+
+    function getPlotData(line, dataset, columnsMap) {
+        let longitude = dataset[line].map(function (value) {
+            return value[columnsMap['destination_longitude_center']];
+        });
+        let latitude = dataset[line].map(function (value) {
+            return value[columnsMap['destination_latitude_center']];
+        });
+        let destination_name = dataset[line].map(function (value) {
+            return value[columnsMap['destination_name']];
+        });
+        let time = dataset[line].map(function (value) {
+            return value[columnsMap['time']].toFixed(2);
+        });
+
+        return [longitude, latitude, destination_name, time]
+    }
+
+    // main functions
+    function makeplot() {
+        Plotly.d3.dsv("\t")("https://raw.githubusercontent.com/martinvolk91/time-space-maps/main/datasets/time_space_ubahn_stations.csv", function (data) {
+            data.forEach(function (d) {
+                d['source'] = +d['source'];
+                d['destination'] = +d['destination'];
+                d['time'] = +d['time'];
+                d['source_longitude'] = +d['source_longitude'];
+                d['source_latitude'] = +d['source_latitude'];
+                d['destination_longitude'] = +d['destination_longitude'];
+                d['destination_latitude'] = +d['destination_latitude'];
+                d['destination_latitude_center'] = +d['destination_latitude_center'];
+                d['destination_longitude_center'] = +d['destination_longitude_center'];
+                d['time_scaled'] = +d['time_scaled'];
+                d['angle'] = +d['angle'];
+                d['stop_seq_count_U1'] = +d['stop_seq_count_U1'];
+                d['stop_seq_count_U2'] = +d['stop_seq_count_U2'];
+                d['stop_seq_count_U3'] = +d['stop_seq_count_U3'];
+                d['stop_seq_count_U4'] = +d['stop_seq_count_U4'];
+                d['stop_seq_count_U6'] = +d['stop_seq_count_U6'];
+            });
+            processData(data)
+        });
+    };
+
+    function processData(allRows) {
+        /***
+         * Read all data
+         * Prepare traces
+         */
+
+        let mapData = prepareMapData('Landstraße', allRows);
+        let columnsMap = getColumnsMap(allRows);
+
+        makePlotly(mapData, columnsMap, allRows, true);
+    }
+
+    function makePlotly(dataset, columnsMap, allRows, callback_check) {
+        let lineColors = ['red', 'violet', 'orange', 'green', 'brown']
+        let lines = ['U1', 'U2', 'U3', 'U4', 'U6']
+        let traces = []
+
+        let arrayMax = []
+
+        for (let i = 0; i < lines.length; i++) {
+            let plotData = getPlotData(lines[i], dataset, columnsMap)
+
+            arrayMax.push(plotData[0].reduce(function (max, item) {
+                return Math.max(Math.abs(max), Math.abs(item));
+            }));
+            arrayMax.push(plotData[1].reduce(function (max, item) {
+                return Math.max(Math.abs(max), Math.abs(item));
+            }));
+
+            traces.push({
+                x: plotData[0],
+                y: plotData[1],
+                text: plotData[2],
+                customdata: plotData[3],
+                textposition: 'top right',
+                hovertemplate: '<b>%{text}</b>' +
+                    '<br>Time: %{customdata}',
+                name: lines[i],
+                mode: 'lines+markers+text',
+                type: 'scatter',
+                showlegend: true,
+                marker: {
+                    size: 8,
+                    color: lineColors[i],
+                    line: {
+                        color: lineColors[i],
+                    }
+                }
+            })
+        }
+
+        let max = arrayMax.reduce(function (max, item) {
+            return Math.max(Math.abs(max), Math.abs(item));
+        }) + 10;
+        max = Math.max(max, 51)
+
+        let myPlot = document.getElementById("myPlot");
+
+        let layout = {
+            hovermode: 'closest',
+            title: 'Time-space map of Vienna U-Bahn',
+            xaxis: {
+                showgrid: false,
+            },
+            yaxis: {
+                scaleanchor: "x",
+                scaleratio: 1.0,
+                showgrid: false,
+            },
+            font: {
+                size: 9,
+            },
+            shapes: [
+                {
+                    type: 'circle',
+                    xref: 'x',
+                    yref: 'y',
+                    x0: -10,
+                    y0: -10,
+                    x1: 10,
+                    y1: 10,
+                    line: {
+                        color: 'blue'
+                    }
+                },
+                {
+                    type: 'circle',
+                    xref: 'x',
+                    yref: 'y',
+                    x0: -20,
+                    y0: -20,
+                    x1: 20,
+                    y1: 20,
+                    line: {
+                        color: 'blue'
+                    }
+                },
+                {
+                    type: 'circle',
+                    xref: 'x',
+                    yref: 'y',
+                    x0: -30,
+                    y0: -30,
+                    x1: 30,
+                    y1: 30,
+                    line: {
+                        color: 'blue'
+                    }
+                },
+                {
+                    type: 'circle',
+                    xref: 'x',
+                    yref: 'y',
+                    x0: -40,
+                    y0: -40,
+                    x1: 40,
+                    y1: 40,
+                    line: {
+                        color: 'blue'
+                    }
+                },
+            ]
+        }
+
+        if (callback_check) {
+            Plotly.newPlot('myPlot', traces, layout);
+        }
+
+        Plotly.animate('myPlot', {
+            data: traces,
+            traces: [0, 1, 2, 3, 4],
+            layout: layout
+        }, {
+            transition: {
+                duration: 500,
+                easing: 'cubic-in-out'
+            }
+        })
+
+        var changes = {
+            'xaxis.range': [-max, max],
+            'yaxis.range': [-max, max]
+        };
+
+        Plotly.relayout('myPlot', changes);
+
+        if (callback_check) {
+            myPlot.on('plotly_click', function (data) {
+                let centerStationName = data.points[0].text;
+
+                let mapData = prepareMapData(centerStationName, allRows);
+                makePlotly(mapData, columnsMap, allRows, false);
+            });
+        }
+    };
+
+    makeplot();
+</script>
+</body>
